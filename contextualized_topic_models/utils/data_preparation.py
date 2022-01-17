@@ -27,6 +27,14 @@ def bert_embeddings_from_file(text_file, sbert_model_to_load, batch_size=200):
 
     return np.array(model.encode(train_text, show_progress_bar=True, batch_size=batch_size))
 
+def bert_embeddings_from_modules(texts, modules, batch_size=200):
+    """
+    Creates SBERT Embeddings from an input file
+    """
+    model = SentenceTransformer(modules = modules)
+
+    return np.array(model.encode(texts, show_progress_bar=True, batch_size=batch_size))
+
 
 def bert_embeddings_from_list(texts, sbert_model_to_load, batch_size=200):
     """
@@ -38,8 +46,9 @@ def bert_embeddings_from_list(texts, sbert_model_to_load, batch_size=200):
 
 class TopicModelDataPreparation:
 
-    def __init__(self, contextualized_model=None, show_warning=True):
+    def __init__(self, contextualized_model=None, modules=None, show_warning=True):
         self.contextualized_model = contextualized_model
+        self.modules = modules
         self.vocab = []
         self.id2token = {}
         self.vectorizer = None
@@ -59,14 +68,14 @@ class TopicModelDataPreparation:
 
         """
 
-        if self.contextualized_model is None:
-            raise Exception("You should define a contextualized model if you want to create the embeddings")
-
         # TODO: this count vectorizer removes tokens that have len = 1, might be unexpected for the users
         self.vectorizer = CountVectorizer()
 
         train_bow_embeddings = self.vectorizer.fit_transform(text_for_bow)
-        train_contextualized_embeddings = bert_embeddings_from_list(text_for_contextual, self.contextualized_model)
+        if self.contextualized_model is not None :
+            train_contextualized_embeddings = bert_embeddings_from_list(text_for_contextual, self.contextualized_model)
+        else :
+            train_contextualized_embeddings = bert_embeddings_from_modules(text_for_contextual, self.modules)
         self.vocab = self.vectorizer.get_feature_names()
         self.id2token = {k: v for k, v in zip(range(0, len(self.vocab)), self.vocab)}
 
